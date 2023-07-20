@@ -1,0 +1,4 @@
+gdal
+eumdac
+requests
+tqdm
