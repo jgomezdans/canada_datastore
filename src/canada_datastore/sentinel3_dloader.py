@@ -101,7 +101,7 @@ def select_product_filter(
     def process(product):
         return process_granule(product, output_folder)
 
-    fnames = thread_map(downloader, products)
+    fnames = thread_map(downloader, products, max_workers=4)
     thread_map(process, fnames)
 
 
