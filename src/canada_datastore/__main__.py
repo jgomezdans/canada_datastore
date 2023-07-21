@@ -2,6 +2,7 @@ import click
 from canada_datastore import select_product_filter
 from canada_datastore import get_s3_lvl2_products, process_lv2_products
 from canada_datastore import get_firms_date
+from .utils import get_folder
 import datetime as dt
 import logging
 from pathlib import Path
@@ -59,15 +60,6 @@ def main(lvl1folder, lvl2folder, firmsfolder, date):
             output_folder=lvl1folder.as_posix(),
         )
         today = today + day1
-
-
-def get_folder(folder: str | Path | None) -> Path | None:
-    if folder is not None:
-        folder = Path(folder)
-        if not folder.exists():
-            raise IOError(f"Can't find {folder} product folder")
-        return folder
-    return folder
 
 
 main()
