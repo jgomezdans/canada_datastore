@@ -8,7 +8,7 @@ from retrying import retry
 logger = logging.getLogger("canada_datastore")
 
 URL = (
-    "sftp://ftp_ompc_esl:phae2eTo@ftp.adwaiseo-services.com/"
+    "ftp://ftp_ompc_esl:phae2eTo@ftp.adwaiseo-services.com/"
     + "sentinel-3/To_KLC/Canadian_Campaign/"
 )
 
@@ -62,9 +62,9 @@ def download_files_from_ftps(remote_url: str, local_directory: str) -> None:
                 if not local_file_path.exists():
                     with local_file_path.open("wb") as local_file:
                         ftps.retrbinary(f"RETR {file_name}", local_file.write)
-                    logger.info(f"Downloaded {file_name}")
+                    logger.debug(f"Downloaded {file_name}")
                 else:
-                    logger.info(f"{file_name} already exists. Skipping...")
+                    logger.debug(f"{file_name} already exists. Skipping...")
 
         # Return to the parent directory after downloading
         # all files/subdirectories
@@ -82,7 +82,7 @@ def get_s3_lvl2_products(local_dir: str | Path):
     local_dir = Path(local_dir)
     if not local_dir.exists():
         local_dir.mkdir(parents=True, exist_ok=True)
-    for folder in ["NRT-like_products", "operational_products"]:
+    for folder in ["operational_data"]:
         remote_url = f"{URL}/{folder}"
         download_files_from_ftps(remote_url, local_dir.as_posix())
     logger.info("Done with SEN3 Level 2 mirroring")
