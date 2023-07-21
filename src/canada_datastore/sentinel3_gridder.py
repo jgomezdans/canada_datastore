@@ -1,9 +1,9 @@
 import datetime as dt
 import logging
+import subprocess
 from pathlib import Path
 
 from osgeo import gdal
-import subprocess
 
 logger = logging.getLogger("canada_datastore")
 

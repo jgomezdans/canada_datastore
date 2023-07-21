@@ -1,14 +1,15 @@
 """A Sentinel 3 download object for NRT Level 1b products"""
 
-import eumdac
 import datetime as dt
+import logging
 import os
+import shutil
+import zipfile
 from pathlib import Path
+
+import eumdac
 import requests
 from retrying import retry
-import shutil
-import logging
-import zipfile
 from tqdm.contrib.concurrent import thread_map
 
 from .sentinel3_gridder import find_files

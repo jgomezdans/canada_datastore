@@ -1,5 +1,6 @@
-import sys
 import logging
+import sys
+
 from .sentinel3_dloader import select_product_filter  # noqa
 
 logging.basicConfig(
