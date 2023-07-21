@@ -1,6 +1,6 @@
 import click
-from .canada_datastore import select_product_filter
-from .canada_datastore import get_s3_lvl2_products
+from canada_datastore import select_product_filter
+from canada_datastore import get_s3_lvl2_products
 import datetime as dt
 import logging
 from pathlib import Path
@@ -24,7 +24,7 @@ PICKLE_LAKE = [
 @click.option(
     "-f2", "--lvl2folder", default="./", help="Level2 product folder"
 )
-@click.option("-d", "--date", default=None, help="Date to gather data")
+@click.option("-d", "--date", default=None, help="Level 1 start date")
 def main(lvl1folder, lvl2folder, date):
     lvl1folder = Path(lvl1folder)
     lvl2folder = Path(lvl2folder)
@@ -33,14 +33,14 @@ def main(lvl1folder, lvl2folder, date):
     if not lvl2folder.exists():
         raise IOError("Can't find lvl2 product folder")
 
-    get_s3_lvl2_products(lvl2folder.as_posix_path())
+    get_s3_lvl2_products(lvl2folder.as_posix())
     if date is not None:
         try:
             date = dt.datetime.strptime(date, "%Y-%m-%d")
         except ValueError:
             logger.error("Dates should be given as YYYY-MM-DD format")
     else:
-        start_day = dt.datetime(2023, 7, 1)
+        start_day = dt.datetime(2023, 7, 15)
     day1 = dt.timedelta(days=1)
     today = start_day
     while today <= dt.datetime.now():
