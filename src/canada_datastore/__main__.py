@@ -20,34 +20,33 @@ PICKLE_LAKE = [
 
 @click.command()
 @click.option(
-    "-f1", "--lvl1folder", default="./", help="Level1 product folder"
+    "-f1", "--lvl1folder", default=None, help="Level1 product folder"
 )
 @click.option(
-    "-f2", "--lvl2folder", default="./", help="Level2 product folder"
+    "-f2", "--lvl2folder", default=None, help="Level2 product folder"
 )
 @click.option(
-    "-ff", "--firmsfolder", default="./", help="FIRMS product folder"
+    "-ff", "--firmsfolder", default=None, help="FIRMS product folder"
 )
 @click.option("-d", "--date", default=None, help="Level 1 start date")
 def main(lvl1folder, lvl2folder, firmsfolder, date):
-    lvl1folder = Path(lvl1folder)
-    lvl2folder = Path(lvl2folder)
-    firmsfolder = Path(firmsfolder)
-    if not lvl1folder.exists():
-        raise IOError("Can't find lvl1 product folder")
-    if not lvl2folder.exists():
-        raise IOError("Can't find lvl2 product folder")
-    if not firmsfolder.exists():
-        raise IOError("Can't find FIRMS folder")
-    get_s3_lvl2_products(lvl2folder.as_posix())
+    lvl1folder = get_folder(lvl1folder)
+    lvl2folder = get_folder(lvl2folder)
+    firmsfolder = get_folder(firmsfolder)
+
     if date is not None:
         try:
-            date = dt.datetime.strptime(date, "%Y-%m-%d")
+            start_day = dt.datetime.strptime(date, "%Y-%m-%d")
         except ValueError:
             logger.error("Dates should be given as YYYY-MM-DD format")
     else:
         start_day = dt.datetime(2023, 7, 15)
-    _ = get_firms_date(start_day, output_folder=firmsfolder, range=2)
+    if firmsfolder is not None:
+        _ = get_firms_date(start_day, output_folder=firmsfolder, range=10)
+    if lvl2folder is not None:
+        get_s3_lvl2_products(lvl2folder.as_posix())
+    if lvl1folder is None:
+        return
     day1 = dt.timedelta(days=1)
     today = start_day
     while today <= dt.datetime.now():
@@ -59,6 +58,15 @@ def main(lvl1folder, lvl2folder, firmsfolder, date):
             output_folder=lvl1folder.as_posix(),
         )
         today = today + day1
+
+
+def get_folder(folder: str | Path | None) -> Path | None:
+    if folder is not None:
+        folder = Path(folder)
+        if not folder.exists():
+            raise IOError(f"Can't find {folder} product folder")
+        return folder
+    return folder
 
 
 main()
