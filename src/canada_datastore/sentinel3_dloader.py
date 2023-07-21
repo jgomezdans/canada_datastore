@@ -70,9 +70,10 @@ def download_product(product, output_folder: str | Path):
 def process_granule(product, output_folder: str | Path):
     output_folder = Path(output_folder)
     loc = output_folder / (product.name.replace(".zip", ""))
-    with zipfile.ZipFile(product, "r") as zip_ref:
-        logger.info(f"Uncompressing {product} to {loc.parent}")
-        zip_ref.extractall(loc.parent)
+    if not loc.exists():
+        with zipfile.ZipFile(product, "r") as zip_ref:
+            logger.info(f"Uncompressing {product} to {loc.parent}")
+            zip_ref.extractall(loc.parent)
 
     find_files(loc)
 
