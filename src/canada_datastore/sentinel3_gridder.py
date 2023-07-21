@@ -28,6 +28,7 @@ def convert_coords(gdal_fname, output_fname) -> None:
         "A/1.0e6",
         "--type",
         "Float32",
+        "--overwrite",
     ]
     try:
         subprocess.run(cmd, check=True)
@@ -49,7 +50,8 @@ def to_vrt(gdal_dataset: str, tag: str) -> Path:
     layer = gdal_dataset.lstrip("NETCDF:").split(":")[0]
     layer = layer.replace("'", "")
     layer = layer.replace('"', "")
-    layer = layer.replace(".nc", f"_{tag}.vrt")
+    layer = layer.replace(".nc", f"_{tag}.tif")
+
     # gdal.Translate(layer, gdal_dataset, format="VRT")
     cmd = [
         "gdal_calc.py",
@@ -61,6 +63,7 @@ def to_vrt(gdal_dataset: str, tag: str) -> Path:
         "A/0.01 + 283.73",
         "--type",
         "Float32",
+        "--overwrite",
     ]
     try:
         subprocess.run(cmd, check=True)
@@ -99,6 +102,8 @@ def to_tif(product: Path) -> Path:
         yRes=1000,
         creationOptions=["COMPRESS=DEFLATE"],
     )
+    _ = None
+    logger.info(f"Written{output_file}")
     return output_tif
 
 
@@ -139,14 +144,15 @@ def find_files(path: str | Path) -> dict:
     for k, v in PRODUCT_LUT.items():
         logger.info("Doing " + k)
         to_tif((path / k))
-    # # Clean up temporary files
-    # for fich in path.glob("*vrt"):
-    #     fich.unlink()
-    # for fich in path.glob("longitude*tif"):
-    #     fich.unlink()
-    # for fich in path.glob("latitude*tif"):
-    #     fich.unlink()
+    # Clean up temporary files
+    for fich in path.glob("*vrt"):
+        fich.unlink()
+    for fich in path.glob("longitude*tif"):
+        fich.unlink()
+    for fich in path.glob("latitude*tif"):
+        fich.unlink()
     fnames = [f for f in path.glob("*.tif")]
+    logger.info(fnames)
     date = gdal.Info((path / "F2_BT_in.nc").as_posix(), format="json")[
         "metadata"
     ][""]["NC_GLOBAL#start_time"]
