@@ -3,7 +3,7 @@ line-length = 78
 
 [project]
 name = "canada_datastore"
-version = "0.0.1"
+version = "0.6"
 description = "Fire finder for SLSTR"
 authors = [
     {name = "Jose Gomez-Dans", email = "jose.gomez-dans@kcl.ac.uk"},
