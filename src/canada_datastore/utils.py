@@ -1,9 +1,9 @@
 import datetime as dt
-from qgis.core import QgsProject, QgsVectorLayer, QgsRasterLayer
-from pathlib import Path
 import logging
-
+from pathlib import Path
 from typing import Dict, List
+
+from qgis.core import QgsProject, QgsRasterLayer, QgsVectorLayer
 
 logger = logging.getLogger("canada_datastore")
 

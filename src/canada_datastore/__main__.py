@@ -1,11 +1,16 @@
-import click
-from canada_datastore import select_product_filter
-from canada_datastore import get_s3_lvl2_products, process_lv2_products
-from canada_datastore import get_firms_date
-from .utils import get_folder
 import datetime as dt
 import logging
-from pathlib import Path
+
+import click
+
+from canada_datastore import (
+    get_firms_date,
+    get_s3_lvl2_products,
+    process_lv2_products,
+    select_product_filter,
+)
+
+from .utils import get_folder
 
 logger = logging.getLogger("canada_datastore")
 
