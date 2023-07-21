@@ -9,7 +9,7 @@ authors = [
     {name = "Jose Gomez-Dans", email = "jose.gomez-dans@kcl.ac.uk"},
 ]
 
-#scripts = {get_arable = "arable_api.__main__:main"}
+scripts = {get_sentinel3 = "canada_datastore.__main__:main"}
 dynamic = ["dependencies"]
 requires-python = ">=3.8"
 readme = "README.md"
