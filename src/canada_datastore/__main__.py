@@ -1,6 +1,6 @@
 import click
 from canada_datastore import select_product_filter
-from canada_datastore import get_s3_lvl2_products
+from canada_datastore import get_s3_lvl2_products, process_lv2_products
 from canada_datastore import get_firms_date
 import datetime as dt
 import logging
@@ -45,6 +45,7 @@ def main(lvl1folder, lvl2folder, firmsfolder, date):
         _ = get_firms_date(start_day, output_folder=firmsfolder, range=10)
     if lvl2folder is not None:
         get_s3_lvl2_products(lvl2folder.as_posix())
+        process_lv2_products(lvl2folder, "processed_output")
     if lvl1folder is None:
         return
     day1 = dt.timedelta(days=1)

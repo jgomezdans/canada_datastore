@@ -1,9 +1,12 @@
 import ftplib
+import json
 import logging
+import pandas as pd
 from pathlib import Path
 from urllib.parse import urlparse
-
+import xarray as xr
 from retrying import retry
+from .utils import dataframe_to_geojson
 
 logger = logging.getLogger("canada_datastore")
 
@@ -11,6 +14,21 @@ URL = (
     "ftp://ftp_ompc_esl:phae2eTo@ftp.adwaiseo-services.com/"
     + "sentinel-3/To_KLC/Canadian_Campaign/"
 )
+
+
+def nc_to_dataframe(fname, to_folder):
+    to_folder = Path(to_folder)
+    ds = xr.open_dataset(fname)
+    tag = fname.step.split("_")[1]
+    columns = [k for k, v in ds.variables.items() if ds[k].values.ndim == 1]
+    values = (ds[k].values for k in columns)
+    df = pd.DataFrame(dict(zip(columns, values)))
+    geojson = dataframe_to_geojson(df)
+    df.to_csv(to_folder / (fname.parent.stem + f"_{tag}.csv"))
+    with open(
+        to_folder / (fname.parent.stem + f"_{tag}.geojson"), mode="w"
+    ) as fp:
+        json.dump(fp, geojson, indent=True)
 
 
 def download_files_from_ftps(remote_url: str, local_directory: str) -> None:
@@ -33,6 +51,7 @@ def download_files_from_ftps(remote_url: str, local_directory: str) -> None:
     # Create the local directory if it does not exist
     local_directory_path = Path(local_directory)
     local_directory_path.mkdir(parents=True, exist_ok=True)
+    dloaded_files = []
 
     @retry(wait_fixed=2000, stop_max_attempt_number=3)
     def download_directory(
@@ -55,6 +74,7 @@ def download_files_from_ftps(remote_url: str, local_directory: str) -> None:
                 # and continue recursion
                 local_subdirectory = local_directory_path / file_name
                 local_subdirectory.mkdir(parents=True, exist_ok=True)
+                logger.info(f"Going into {file_name}")
                 download_directory(file_name, local_subdirectory)
             else:
                 # Download the file
@@ -63,6 +83,7 @@ def download_files_from_ftps(remote_url: str, local_directory: str) -> None:
                     with local_file_path.open("wb") as local_file:
                         ftps.retrbinary(f"RETR {file_name}", local_file.write)
                     logger.debug(f"Downloaded {file_name}")
+                    dloaded_files.append(local_file)
                 else:
                     logger.debug(f"{file_name} already exists. Skipping...")
 
@@ -75,6 +96,7 @@ def download_files_from_ftps(remote_url: str, local_directory: str) -> None:
 
     # Close the FTPS connection
     ftps.quit()
+    return dloaded_files
 
 
 def get_s3_lvl2_products(local_dir: str | Path):
@@ -82,7 +104,18 @@ def get_s3_lvl2_products(local_dir: str | Path):
     local_dir = Path(local_dir)
     if not local_dir.exists():
         local_dir.mkdir(parents=True, exist_ok=True)
-    for folder in ["operational_data"]:
-        remote_url = f"{URL}/{folder}"
-        download_files_from_ftps(remote_url, local_dir.as_posix())
+    folder = "operational_data"
+    remote_url = f"{URL}/{folder}"
+    dloaded_files = download_files_from_ftps(remote_url, local_dir.as_posix())
     logger.info("Done with SEN3 Level 2 mirroring")
+    return dloaded_files
+
+
+def process_lv2_products(local_dir: str | Path, output_dir: str):
+    folder = Path(local_dir)
+    outfolder = folder / output_dir
+    if not outfolder.exists():
+        outfolder.mkdir(parents=True, exist_ok=True)
+    fnames = [f for f in folder.glob("FRP*nc")]
+    for fname in fnames:
+        nc_to_dataframe(fname, outfolder)
