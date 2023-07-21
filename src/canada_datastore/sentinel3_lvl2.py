@@ -19,16 +19,23 @@ URL = (
 def nc_to_dataframe(fname, to_folder):
     to_folder = Path(to_folder)
     ds = xr.open_dataset(fname)
-    tag = fname.step.split("_")[1]
-    columns = [k for k, v in ds.variables.items() if ds[k].values.ndim == 1]
-    values = (ds[k].values for k in columns)
-    df = pd.DataFrame(dict(zip(columns, values)))
-    geojson = dataframe_to_geojson(df)
-    df.to_csv(to_folder / (fname.parent.stem + f"_{tag}.csv"))
-    with open(
-        to_folder / (fname.parent.stem + f"_{tag}.geojson"), mode="w"
-    ) as fp:
-        json.dump(fp, geojson, indent=True)
+    if len(ds.fires) > 0:
+        logger.info(f"{len(ds.fires)} fires in {fname}")
+
+        tag = fname.stem.split("_")[1]
+        columns = [
+            k for k, v in ds.variables.items() if ds[k].values.ndim == 1
+        ]
+        values = (ds[k].values for k in columns)
+        df = pd.DataFrame(dict(zip(columns, values)))
+        geojson = dataframe_to_geojson(df)
+        df.to_csv(to_folder / (fname.parent.stem + f"_{tag}.csv"))
+        with open(
+            to_folder / (fname.parent.stem + f"_{tag}.geojson"), mode="w"
+        ) as fp:
+            json.dump(geojson, fp, indent=True)
+    else:
+        logger.info(f"No fires in {fname}")
 
 
 def download_files_from_ftps(remote_url: str, local_directory: str) -> None:
@@ -116,6 +123,6 @@ def process_lv2_products(local_dir: str | Path, output_dir: str):
     outfolder = folder / output_dir
     if not outfolder.exists():
         outfolder.mkdir(parents=True, exist_ok=True)
-    fnames = [f for f in folder.glob("FRP*nc")]
+    fnames = [f for f in folder.rglob("**/FRP*nc")]
     for fname in fnames:
         nc_to_dataframe(fname, outfolder)

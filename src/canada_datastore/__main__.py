@@ -44,7 +44,7 @@ def main(lvl1folder, lvl2folder, firmsfolder, date):
     if firmsfolder is not None:
         _ = get_firms_date(start_day, output_folder=firmsfolder, range=10)
     if lvl2folder is not None:
-        get_s3_lvl2_products(lvl2folder.as_posix())
+        # get_s3_lvl2_products(lvl2folder.as_posix())
         process_lv2_products(lvl2folder, "processed_output")
     if lvl1folder is None:
         return
