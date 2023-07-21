@@ -5,6 +5,7 @@ import datetime as dt
 import os
 from pathlib import Path
 import requests
+import retry
 import shutil
 import logging
 import zipfile
@@ -46,12 +47,14 @@ def access_token(
     return token
 
 
+@retry(wait_random_min=1000, wait_random_max=10000, max_retries=10)
 def set_up_collection(collection_name: str) -> eumdac.DataStore.collections:
     token = access_token()
     datastore = eumdac.DataStore(token)
     return datastore.get_collection(collection_name)
 
 
+@retry(wait_random_min=1000, wait_random_max=10000, max_retries=10)
 def download_product(product, output_folder: str | Path):
     output_folder = Path(output_folder)
     output_file = output_folder / (f"{product._id}.zip")
