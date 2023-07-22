@@ -3,8 +3,18 @@ import logging
 from pathlib import Path
 from typing import Dict
 
-from qgis.core import (QgsApplication, QgsProject, QgsRasterLayer,
-                       QgsVectorLayer)
+from qgis.core import (
+    QgsApplication,
+    QgsProject,
+    QgsRasterLayer,
+    QgsVectorLayer,
+    QgsSingleBandPseudoColorRenderer,
+    QgsColorRampShader,
+    QgsRasterShader,
+    QgsColorRamp,
+)
+
+from qgis.PyQt.QtGui import QColor
 
 logger = logging.getLogger("canada_datastore")
 
@@ -57,6 +67,24 @@ def add_layers_to_project(
         for _, [label, the_url] in layer_files.items():
             layer = QgsRasterLayer(the_url, label, "gdal")
             if layer.isValid():
+                # Create a grayscale color ramp shader
+                color_ramp = QgsColorRamp()
+                color_ramp.setColorRampType(QgsColorRamp.Interpolated)
+                color_ramp.setColor1(QColor(0, 0, 0))
+                color_ramp.setColor2(QColor(255, 255, 255))
+                color_ramp.setColor1(QColor(0, 0, 0))
+                color_ramp.setColor2(QColor(255, 255, 255))
+                # Create a single band pseudo-color renderer with
+                # the grayscale color ramp shader
+                shader = QgsRasterShader()
+                shader.setRasterShaderFunction(
+                    QgsColorRampShader(0, 255, color_ramp)
+                )
+                renderer = QgsSingleBandPseudoColorRenderer(
+                    layer.dataProvider(), 1, shader
+                )
+                layer.setRenderer(renderer)
+                project.addMapLayer(layer, False)
                 print(f"Adding {label}")
                 project.addMapLayer(
                     layer, True
