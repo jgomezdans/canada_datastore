@@ -1,11 +1,13 @@
 import ftplib
 import json
 import logging
-import pandas as pd
 from pathlib import Path
 from urllib.parse import urlparse
+
+import pandas as pd
 import xarray as xr
 from retrying import retry
+
 from .utils import dataframe_to_geojson
 
 logger = logging.getLogger("canada_datastore")

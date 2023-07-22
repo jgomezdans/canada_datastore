@@ -3,12 +3,8 @@ import logging
 
 import click
 
-from canada_datastore import (
-    get_firms_date,
-    get_s3_lvl2_products,
-    process_lv2_products,
-    select_product_filter,
-)
+from canada_datastore import (get_firms_date, get_s3_lvl2_products,
+                              process_lv2_products, select_product_filter)
 
 from .utils import get_folder
 

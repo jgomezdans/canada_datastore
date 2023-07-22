@@ -1,8 +1,9 @@
+import datetime as dt
 import json
 import logging
-import pandas as pd
-import datetime as dt
 from pathlib import Path
+
+import pandas as pd
 
 from .utils import dataframe_to_geojson
 
@@ -22,7 +23,7 @@ def get_firms_date(
         sensors = [
             "MODIS_NRT",
             "VIIRS_NOAA20_NRT",
-            "VIIR_NPP_NRT",
+            "VIIRS_SNPP_NRT",
             "GOES_NRT",
         ]
     output_folder = (

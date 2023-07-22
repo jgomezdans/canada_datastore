@@ -1,17 +1,19 @@
 import datetime as dt
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 
-from qgis.core import QgsProject, QgsRasterLayer, QgsVectorLayer
+from qgis.core import (QgsApplication, QgsProject, QgsRasterLayer,
+                       QgsVectorLayer)
 
 logger = logging.getLogger("canada_datastore")
 
-URL = "http://10.81.205.13/shared/jose/canada_datastore/"
+# URL = "http://10.81.205.13/shared/jose/canada_datastore/"
+URL = "/home/jose/data/Canada_datastore/"
 
 
 def add_layers_to_project(
-    layers: Dict[str, List[str]], project_path: str
+    layers1, layers2, layersfirms, project_path: str
 ) -> None:
     """
     Generate a QGIS project file (.qgs) with layers organized into groups
@@ -30,45 +32,47 @@ def add_layers_to_project(
     """
 
     # Initialize QGIS project
+    qgs = QgsApplication([], False)
+    QgsApplication.setPrefixPath("/home/jose/mambaforge/bin/qgis", True)
+    QgsApplication.initQgis()
     project = QgsProject.instance()
     project.setCrs(
         QgsProject.instance().crs()
     )  # Set project CRS (use the same as the first layer added)
 
-    for group_label, layer_files in layers.items():
-        # Create a group for each label
-        group = project.layerTreeRoot().addGroup(group_label)
-
+    sorted(layersfirms)
+    for group_label, layer_files in layersfirms.items():
         # Add layers to the group based on their type (raster or vector)
-        for layer_file in layer_files:
-            if layer_file.lower().endswith(
-                ".tif"
-            ):  # Check if the layer is a raster
-                layer = QgsRasterLayer(
-                    layer_file, f"{layer_file.split('.')[0]} - Raster"
-                )
-            elif layer_file.lower().endswith(
-                ".geojson"
-            ):  # Check if the layer is a vector
-                layer = QgsVectorLayer(
-                    layer_file, f"{layer_file.split('.')[0]} - Vector", "ogr"
-                )
-            else:
-                # Skip unsupported file types (you can add more
-                # file extensions as needed)
-                logger.info(f"Skipping unsupported layer: {layer_file}")
-                continue
-
+        for _, (label, the_url) in layer_files.items():
+            layer = QgsVectorLayer(the_url, label, "ogr")
             if layer.isValid():
+                print(f"Adding {label}")
                 project.addMapLayer(
-                    layer, False
+                    layer, True
                 )  # Add the layer without adding it to the layer tree
-                group.addLayer(
-                    layer
-                )  # Add the layer to the corresponding group
+    sorted(layers1)
+
+    for group_label, layer_files in layers1.items():
+        # Add layers to the group based on their type (raster or vector)
+        for _, [label, the_url] in layer_files.items():
+            layer = QgsRasterLayer(the_url, label, "gdal")
+            if layer.isValid():
+                print(f"Adding {label}")
+                project.addMapLayer(
+                    layer, True
+                )  # Add the layer without adding it to the layer tree
+    sorted(layers2)
+    for _, [label, the_url] in layers2.items():
+        print(the_url)
+        layer = QgsVectorLayer(the_url, label, "ogr")
+        if layer.isValid():
+            print(f"Adding {label}")
+            project.addMapLayer(
+                layer, True
+            )  # Add the layer without adding it to the layer tree
 
     # Save the project file
-    project.write(project_path)
+    project.write(project_path.as_posix())
     logger.info(f"QGIS project file saved at: {project_path}")
 
 
@@ -110,7 +114,7 @@ def scan_firms(firmsfolder: Path) -> dict:
     sensors = [
         "MODIS_NRT",
         "VIIRS_NOAA20_NRT",
-        "VIIR_NPP_NRT",
+        "VIIRS_SNPP_NRT",
         "GOES_NRT",
     ]
     retval = {}
@@ -123,19 +127,48 @@ def scan_firms(firmsfolder: Path) -> dict:
             )
             time_str = time.strftime("%b %d")
             label = f"{time_str} {sensor.rstrip('_NRT')}"
-            tmp[time] = [label, URL + "/".join(fich.parts[-3:])]
+            tmp[time] = [label, URL + "/".join(fich.parts[-2:])]
         if tmp:
             retval[sensor] = tmp
     return retval
+
+
+def create_all_project_files(
+    lvl1folder, lvl2folder, firmsfolder, output_folder
+):
+    l1, l2, f1 = scan_layers(lvl1folder, lvl2folder, firmsfolder)
+    s1 = set([k.date() for k in l1.keys()])
+    s2 = set([k.date() for k in l2.keys()])
+    s3 = set([k.date() for k in f1.keys()])
+    distinct_dates = sorted(list((s1.union(s2)).union(s3)))
+
+    for today in distinct_dates:
+        if today < dt.date(2023, 7, 15):
+            continue
+        output_fname = (
+            output_folder / f"proj_{today.strftime('%Y-%m-%d')}.qgs"
+        )
+        l1_today = {k: v for k, v in l1.items() if k.date() == today}
+        l2_today = {k: v for k, v in l2.items() if k.date() == today}
+        firms_today = {k: v for k, v in f1.items() if k.date() == today}
+        print(today)
+        print(l1_today)
+        print("****")
+        print(l2_today)
+        print("*****")
+        print(firms_today)
+
+        add_layers_to_project(l1_today, l2_today, firms_today, output_fname)
+        break
 
 
 def scan_layers(lvl1folder, lvl2folder, firmsfolder):
     lvl1folder = get_folder(lvl1folder)
     lvl2folder = get_folder(lvl2folder)
     firmsfolder = get_folder(firmsfolder)
-    lvl1_dict = scan_level1(lvl1folder)
+    lvl1_dict = convert_nested_dict(scan_level1(lvl1folder))
     lvl2_dict = scan_level2(lvl2folder)
-    firms_dict = scan_firms(firmsfolder)
+    firms_dict = convert_nested_dict(scan_firms(firmsfolder))
     return (lvl1_dict, lvl2_dict, firms_dict)
 
 
@@ -169,3 +202,31 @@ def get_folder(folder: str | Path | None) -> Path | None:
             raise IOError(f"Can't find {folder} product folder")
         return folder
     return folder
+
+
+def convert_nested_dict(
+    original_dict: Dict[str, Dict[str, int]]
+) -> Dict[str, Dict[str, int]]:
+    """
+    Convert a nested dictionary from the form "dict[sensor][date]" to
+    "dict[date][sensor]".
+
+    Args:
+        original_dict (Dict[str, Dict[str, int]]): The original nested
+        dictionary with sensors and dates.
+
+    Returns:
+        Dict[str, Dict[str, int]]: A new nested dictionary with keys
+        rearranged, where the outer dictionary
+        keys are dates, and the inner dictionary keys are sensors, and the
+        values are integers.
+    """
+    new_dict: Dict[str, Dict[str, int]] = {}
+
+    for sensor, dates_dict in original_dict.items():
+        for date, value in dates_dict.items():
+            if date not in new_dict:
+                new_dict[date] = {}
+            new_dict[date][sensor] = value
+
+    return new_dict
