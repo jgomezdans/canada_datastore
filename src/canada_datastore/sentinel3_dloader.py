@@ -1,6 +1,7 @@
 """A Sentinel 3 download object for NRT Level 1b products"""
 
 import datetime as dt
+from functools import partial
 import logging
 import os
 import shutil
@@ -10,7 +11,7 @@ from pathlib import Path
 import eumdac
 import requests
 from retrying import retry
-from tqdm.contrib.concurrent import thread_map
+from tqdm.contrib.concurrent import thread_map, process_map
 
 from .sentinel3_gridder import find_files
 
@@ -71,10 +72,13 @@ def process_granule(product, output_folder: str | Path):
     output_folder = Path(output_folder)
     loc = output_folder / (product.name.replace(".zip", ""))
     if not loc.exists():
-        with zipfile.ZipFile(product, "r") as zip_ref:
-            logger.info(f"Uncompressing {product} to {loc.parent}")
-            zip_ref.extractall(loc.parent)
-
+        try:
+            with zipfile.ZipFile(product, "r") as zip_ref:
+                logger.info(f"Uncompressing {product} to {loc.parent}")
+                zip_ref.extractall(loc.parent)
+        except zipfile.BadZipFile:
+            print(f"{product} is corrupted?")
+            return {}
     find_files(loc)
 
 
@@ -103,11 +107,13 @@ def select_product_filter(
     def downloader(product):
         return download_product(product, output_folder)
 
-    def process(product):
-        return process_granule(product, output_folder)
+    # def process(product):
+    #     return process_granule(product, output_folder)
 
+    process = partial(process_granule, output_folder=output_folder)
     fnames = thread_map(downloader, products, max_workers=4)
-    thread_map(process, fnames)
+    process_map(process, fnames)
+    # [process(x) for x in fnames]
 
 
 if __name__ == "__main__":
