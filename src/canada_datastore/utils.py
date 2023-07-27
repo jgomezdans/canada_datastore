@@ -61,8 +61,10 @@ def add_layers_to_project(
     """
 
     # Initialize QGIS project
+    layerz = []
+
     QgsApplication.setPrefixPath("/home/jose/mambaforge/bin", True)
-    qgs = QgsApplication([], False)
+    qgs = QgsApplication([], False, None)
     qgs.initQgis()
     default_crs = QgsCoordinateReferenceSystem("EPSG:3348")
     project = QgsProject.instance()
@@ -73,7 +75,9 @@ def add_layers_to_project(
     for group_label, layer_files in layersfirms.items():
         # Add layers to the group based on their type (raster or vector)
         for _, (label, the_url) in layer_files.items():
+            print(the_url, label)
             layer = QgsVectorLayer(the_url, f"FIRMS {label}", "ogr")
+            layerz.append(layer)
             if layer.isValid():
                 print(f"Adding {label}")
                 project.addMapLayer(
@@ -82,25 +86,23 @@ def add_layers_to_project(
                 firms_grp.addLayer(layer)  # Add the layer
     sorted(layers1)
     lvl1_grp = root.addGroup("S3 Level 1 BT")
-    groups = {
-        "F1": lvl1_grp.addGroup("F1"),
-        "F2": lvl1_grp.addGroup("F2"),
-        "S7": lvl1_grp.addGroup("S7"),
-        "S8": lvl1_grp.addGroup("S8"),
-        "S9": lvl1_grp.addGroup("S9"),
-    }
 
     for group_label, layer_files in layers1.items():
         # Add layers to the group based on their type (raster or vector)
         for group_label, [label, the_url] in layer_files.items():
+            print(the_url, label)
             layer = add_qgis_raster_layer(the_url, label)
+            layerz.append(layer)
             project.addMapLayer(layer, False)
             print(f"Adding {label}")
-            groups[group_label].addLayer(layer)
+            lvl1_grp.addLayer(layer)
     sorted(layers2)
+
     l2a_grp = root.addGroup("S3 Level 2 FRP")
     for _, [label, the_url] in layers2.items():
         layer = QgsVectorLayer(the_url, f"S3 L2A FRP {label}", "ogr")
+        print(the_url, label)
+        layerz.append(layer)
         if layer.isValid():
             print(f"Adding {label}")
             project.addMapLayer(
@@ -110,7 +112,7 @@ def add_layers_to_project(
     # Save the project file
     project.write(project_path.as_posix())
     logger.info(f"QGIS project file saved at: {project_path}")
-    qgs.exitQgis()
+    qgs.exit()
 
 
 def scan_level1(lvl1folder: Path, bands: list | None = None) -> dict:
@@ -188,9 +190,10 @@ def create_all_project_files(
         l1_today = {k: v for k, v in l1.items() if k.date() == today}
         l2_today = {k: v for k, v in l2.items() if k.date() == today}
         firms_today = {k: v for k, v in f1.items() if k.date() == today}
+        import pdb
 
+        pdb.set_trace()
         add_layers_to_project(l1_today, l2_today, firms_today, output_fname)
-        break
 
 
 def scan_layers(lvl1folder, lvl2folder, firmsfolder):
