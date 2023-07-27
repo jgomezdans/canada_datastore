@@ -8,19 +8,37 @@ from qgis.core import (
     QgsProject,
     QgsRasterLayer,
     QgsVectorLayer,
-    QgsSingleBandPseudoColorRenderer,
-    QgsColorRampShader,
-    QgsRasterShader,
-    QgsColorRamp,
     QgsCoordinateReferenceSystem,
+    QgsSingleBandGrayRenderer,
+    QgsContrastEnhancement,
 )
 
-from qgis.PyQt.QtGui import QColor
 
 logger = logging.getLogger("canada_datastore")
 
-# URL = "http://10.81.205.13/shared/jose/canada_datastore/"
-URL = "/home/jose/data/Canada_datastore/"
+URL = "http://10.81.205.13:3333/"
+# URL = "/home/jose/data/Canada_datastore/"
+
+
+def add_qgis_raster_layer(the_url, label):
+    raster_layer = QgsRasterLayer(the_url, label)
+
+    # Check if th   e layer was loaded successfully
+    if not raster_layer.isValid():
+        print(f"Error: Layer {the_url} is not valid.")
+        raise IOError
+
+    renderer = QgsSingleBandGrayRenderer(raster_layer.dataProvider(), 1)
+    ce = QgsContrastEnhancement(raster_layer.dataProvider().dataType(0))
+    ce.setContrastEnhancementAlgorithm(
+        QgsContrastEnhancement.StretchToMinimumMaximum
+    )
+    ce.setMinimumValue(250)
+    ce.setMaximumValue(350)
+    renderer.setContrastEnhancement(ce)
+
+    raster_layer.setRenderer(renderer)
+    return raster_layer
 
 
 def add_layers_to_project(
@@ -43,65 +61,56 @@ def add_layers_to_project(
     """
 
     # Initialize QGIS project
-    _ = QgsApplication([], False)
-    QgsApplication.setPrefixPath("/home/jose/mambaforge/bin/qgis", True)
-    QgsApplication.initQgis()
-    default_crs = QgsCoordinateReferenceSystem("EPSG:4326")
+    QgsApplication.setPrefixPath("/home/jose/mambaforge/bin", True)
+    qgs = QgsApplication([], False)
+    qgs.initQgis()
+    default_crs = QgsCoordinateReferenceSystem("EPSG:3348")
     project = QgsProject.instance()
     project.setCrs(default_crs)  # Set project CRS
-
+    root = project.layerTreeRoot()
+    firms_grp = root.addGroup("FIRMS hotspots")
     sorted(layersfirms)
     for group_label, layer_files in layersfirms.items():
         # Add layers to the group based on their type (raster or vector)
         for _, (label, the_url) in layer_files.items():
-            layer = QgsVectorLayer(the_url, label, "ogr")
+            layer = QgsVectorLayer(the_url, f"FIRMS {label}", "ogr")
             if layer.isValid():
                 print(f"Adding {label}")
                 project.addMapLayer(
-                    layer, True
+                    layer, False
                 )  # Add the layer without adding it to the layer tree
+                firms_grp.addLayer(layer)  # Add the layer
     sorted(layers1)
+    lvl1_grp = root.addGroup("S3 Level 1 BT")
+    groups = {
+        "F1": lvl1_grp.addGroup("F1"),
+        "F2": lvl1_grp.addGroup("F2"),
+        "S7": lvl1_grp.addGroup("S7"),
+        "S8": lvl1_grp.addGroup("S8"),
+        "S9": lvl1_grp.addGroup("S9"),
+    }
 
     for group_label, layer_files in layers1.items():
         # Add layers to the group based on their type (raster or vector)
-        for _, [label, the_url] in layer_files.items():
-            layer = QgsRasterLayer(the_url, label, "gdal")
-            if layer.isValid():
-                # Create a grayscale color ramp shader
-                color_ramp = QgsColorRamp()
-                color_ramp.setColorRampType(QgsColorRamp.Interpolated)
-                color_ramp.setColor1(QColor(0, 0, 0))
-                color_ramp.setColor2(QColor(255, 255, 255))
-                color_ramp.setColor1(QColor(0, 0, 0))
-                color_ramp.setColor2(QColor(255, 255, 255))
-                # Create a single band pseudo-color renderer with
-                # the grayscale color ramp shader
-                shader = QgsRasterShader()
-                shader.setRasterShaderFunction(
-                    QgsColorRampShader(0, 255, color_ramp)
-                )
-                renderer = QgsSingleBandPseudoColorRenderer(
-                    layer.dataProvider(), 1, shader
-                )
-                layer.setRenderer(renderer)
-                project.addMapLayer(layer, False)
-                print(f"Adding {label}")
-                project.addMapLayer(
-                    layer, True
-                )  # Add the layer without adding it to the layer tree
+        for group_label, [label, the_url] in layer_files.items():
+            layer = add_qgis_raster_layer(the_url, label)
+            project.addMapLayer(layer, False)
+            print(f"Adding {label}")
+            groups[group_label].addLayer(layer)
     sorted(layers2)
+    l2a_grp = root.addGroup("S3 Level 2 FRP")
     for _, [label, the_url] in layers2.items():
-        print(the_url)
-        layer = QgsVectorLayer(the_url, label, "ogr")
+        layer = QgsVectorLayer(the_url, f"S3 L2A FRP {label}", "ogr")
         if layer.isValid():
             print(f"Adding {label}")
             project.addMapLayer(
-                layer, True
+                layer, False
             )  # Add the layer without adding it to the layer tree
-
+            l2a_grp.addLayer(layer)
     # Save the project file
     project.write(project_path.as_posix())
     logger.info(f"QGIS project file saved at: {project_path}")
+    qgs.exitQgis()
 
 
 def scan_level1(lvl1folder: Path, bands: list | None = None) -> dict:
@@ -174,17 +183,11 @@ def create_all_project_files(
         if today < dt.date(2023, 7, 15):
             continue
         output_fname = (
-            output_folder / f"proj_{today.strftime('%Y-%m-%d')}.qgs"
+            output_folder / f"proj_{today.strftime('%Y-%m-%d')}.qgz"
         )
         l1_today = {k: v for k, v in l1.items() if k.date() == today}
         l2_today = {k: v for k, v in l2.items() if k.date() == today}
         firms_today = {k: v for k, v in f1.items() if k.date() == today}
-        print(today)
-        print(l1_today)
-        print("****")
-        print(l2_today)
-        print("*****")
-        print(firms_today)
 
         add_layers_to_project(l1_today, l2_today, firms_today, output_fname)
         break
