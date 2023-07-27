@@ -52,23 +52,13 @@ def to_vrt(gdal_dataset: str, tag: str) -> Path:
     layer = layer.replace('"', "")
     layer = layer.replace(".nc", f"_{tag}.tif")
 
-    # gdal.Translate(layer, gdal_dataset, format="VRT")
-    cmd = [
-        "gdal_calc.py",
-        "-A",
-        gdal_dataset,
-        "--outfile",
+    _ = gdal.Translate(
         layer,
-        "--calc",
-        "A/0.01 + 283.73",
-        "--type",
-        "Float32",
-        "--overwrite",
-    ]
-    try:
-        subprocess.run(cmd, check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Error executing gdal_calc.py: {e}")
+        gdal_dataset,
+        unscale=True,
+        outputType=gdal.GDT_Float32,
+        noData=-32768,
+    )
 
     return Path(layer)
 
