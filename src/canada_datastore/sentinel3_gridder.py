@@ -5,6 +5,7 @@ from pathlib import Path
 
 from osgeo import gdal
 
+gdal.UseExceptions()
 logger = logging.getLogger("canada_datastore")
 
 PRODUCT_LUT = {
@@ -105,7 +106,7 @@ def geocode_vrt(
     ysize = g.RasterYSize
     data_str = f"""<VRTRasterBand band="1" datatype="Float32">
         <SimpleSource>
-        <SourceFilename relativeToVRT="1">{data_fname}</SourceFilename>
+        <SourceFilename relativeToVRT="0">{data_fname}</SourceFilename>
         <SourceBand>1</SourceBand>
         <SourceProperties RasterXSize="{xsize}" RasterYSize="{ysize}" DataType="Float32"/>
         <SrcRect xOff="0" yOff="0" xSize="{xsize}" ySize="{ysize}" />
