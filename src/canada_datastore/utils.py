@@ -43,7 +43,7 @@ def add_layers_to_project(
     """
 
     # Initialize QGIS project
-    qgs = QgsApplication([], False)
+    _ = QgsApplication([], False)
     QgsApplication.setPrefixPath("/home/jose/mambaforge/bin/qgis", True)
     QgsApplication.initQgis()
     default_crs = QgsCoordinateReferenceSystem("EPSG:4326")
