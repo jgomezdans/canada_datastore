@@ -12,6 +12,7 @@ from qgis.core import (
     QgsColorRampShader,
     QgsRasterShader,
     QgsColorRamp,
+    QgsCoordinateReferenceSystem,
 )
 
 from qgis.PyQt.QtGui import QColor
@@ -45,10 +46,9 @@ def add_layers_to_project(
     qgs = QgsApplication([], False)
     QgsApplication.setPrefixPath("/home/jose/mambaforge/bin/qgis", True)
     QgsApplication.initQgis()
+    default_crs = QgsCoordinateReferenceSystem("EPSG:4326")
     project = QgsProject.instance()
-    project.setCrs(
-        QgsProject.instance().crs()
-    )  # Set project CRS (use the same as the first layer added)
+    project.setCrs(default_crs)  # Set project CRS
 
     sorted(layersfirms)
     for group_label, layer_files in layersfirms.items():
