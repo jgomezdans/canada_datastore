@@ -4,6 +4,7 @@ import sys
 from .get_firms import get_firms_date  # noqa
 from .sentinel3_dloader import select_product_filter  # noqa
 from .sentinel3_lvl2 import get_s3_lvl2_products, process_lv2_products  # noqa
+from . import utils  # noqa
 
 logging.basicConfig(
     level=logging.INFO,
