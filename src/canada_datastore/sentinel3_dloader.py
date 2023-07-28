@@ -1,17 +1,17 @@
 """A Sentinel 3 download object for NRT Level 1b products"""
 
 import datetime as dt
-from functools import partial
 import logging
 import os
 import shutil
 import zipfile
+from functools import partial
 from pathlib import Path
 
 import eumdac
 import requests
 from retrying import retry
-from tqdm.contrib.concurrent import thread_map, process_map
+from tqdm.contrib.concurrent import process_map, thread_map
 
 from .sentinel3_gridder import find_files
 

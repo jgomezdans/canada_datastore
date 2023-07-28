@@ -1,6 +1,11 @@
 [tool.black]
 line-length = 78
 
+[tool.isort]
+# isort configuration options
+# For more options: https://pycqa.github.io/isort/docs/configuration/options/
+profile = "black"
+
 [project]
 name = "canada_datastore"
 version = "0.6"

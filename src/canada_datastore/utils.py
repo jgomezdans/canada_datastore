@@ -5,14 +5,13 @@ from typing import Dict
 
 from qgis.core import (
     QgsApplication,
+    QgsContrastEnhancement,
+    QgsCoordinateReferenceSystem,
     QgsProject,
     QgsRasterLayer,
-    QgsVectorLayer,
-    QgsCoordinateReferenceSystem,
     QgsSingleBandGrayRenderer,
-    QgsContrastEnhancement,
+    QgsVectorLayer,
 )
-
 
 logger = logging.getLogger("canada_datastore")
 
@@ -190,9 +189,6 @@ def create_all_project_files(
         l1_today = {k: v for k, v in l1.items() if k.date() == today}
         l2_today = {k: v for k, v in l2.items() if k.date() == today}
         firms_today = {k: v for k, v in f1.items() if k.date() == today}
-        import pdb
-
-        pdb.set_trace()
         add_layers_to_project(l1_today, l2_today, firms_today, output_fname)
 
 

@@ -10,7 +10,7 @@ from canada_datastore import (
     select_product_filter,
 )
 
-from .utils import get_folder
+from .utils import create_all_project_files, get_folder
 
 logger = logging.getLogger("canada_datastore")
 
@@ -65,6 +65,15 @@ def main(lvl1folder, lvl2folder, firmsfolder, date):
             output_folder=lvl1folder.as_posix(),
         )
         today = today + day1
+    logger.info("Downloaded and converted files")
+    logger.info("Creating QGIS project files")
+
+    create_all_project_files(
+        lvl1folder,
+        lvl2folder,
+        firmsfolder,
+        lvl1folder.parent / "qgis_projects",
+    )
 
 
 main()
