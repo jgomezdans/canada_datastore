@@ -45,6 +45,7 @@ def get_firms_date(
             "https://firms.modaps.eosdis.nasa.gov/api/area/csv/"
             + f"{FIRMS_KEY}/{sensor}/{region}/{range}/{start_date}"
         )
+        print(url)
         df = pd.read_csv(url)
         if not df.empty:
             # Have a simple timestamp column...

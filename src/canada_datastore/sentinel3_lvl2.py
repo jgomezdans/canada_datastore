@@ -60,6 +60,7 @@ def download_files_from_ftps(
     ftps.prot_p()
 
     # Change to the remote directory
+    print(remote_file_path)
     ftps.cwd(remote_file_path)
 
     # Create the local directory if it does not exist
@@ -93,6 +94,8 @@ def download_files_from_ftps(
                         continue
                 except ValueError:
                     pass
+                if file_name.find("SL_1_RBT") >= 0:
+                    continue
                 local_subdirectory.mkdir(parents=True, exist_ok=True)
                 logger.info(f"Going into {file_name}")
                 download_directory(file_name, local_subdirectory)
@@ -102,7 +105,7 @@ def download_files_from_ftps(
                 if not local_file_path.exists():
                     with local_file_path.open("wb") as local_file:
                         ftps.retrbinary(f"RETR {file_name}", local_file.write)
-                    logger.debug(f"Downloaded {file_name}")
+                    logger.debug(f"Downloaded {local_file_path}")
                     dloaded_files.append(local_file)
                 else:
                     logger.debug(f"{file_name} already exists. Skipping...")
@@ -126,11 +129,12 @@ def get_s3_lvl2_products(
     local_dir = Path(local_dir)
     if not local_dir.exists():
         local_dir.mkdir(parents=True, exist_ok=True)
-    folder = "operational_data"
+    folder = "NRT_like_data"
     remote_url = f"{URL}/{folder}"
     dloaded_files = download_files_from_ftps(
         remote_url, local_dir.as_posix(), start_date=start_date
     )
+    print(dloaded_files)
     logger.info("Done with SEN3 Level 2 mirroring")
     return dloaded_files
 

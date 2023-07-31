@@ -15,8 +15,8 @@ from qgis.core import (
 
 logger = logging.getLogger("canada_datastore")
 
-URL = "http://10.81.205.13:3333/"
-# URL = "/home/jose/data/Canada_datastore/"
+URL = "http://10.81.205.13:3333/Canada_datastore/"
+# URL = "/home/jose/data/"
 
 
 def add_qgis_raster_layer(the_url, label):
@@ -62,9 +62,6 @@ def add_layers_to_project(
     # Initialize QGIS project
     layerz = []
 
-    QgsApplication.setPrefixPath("/home/jose/mambaforge/bin", True)
-    qgs = QgsApplication([], False, None)
-    qgs.initQgis()
     default_crs = QgsCoordinateReferenceSystem("EPSG:3348")
     project = QgsProject.instance()
     project.setCrs(default_crs)  # Set project CRS
@@ -74,7 +71,6 @@ def add_layers_to_project(
     for group_label, layer_files in layersfirms.items():
         # Add layers to the group based on their type (raster or vector)
         for _, (label, the_url) in layer_files.items():
-            print(the_url, label)
             layer = QgsVectorLayer(the_url, f"FIRMS {label}", "ogr")
             layerz.append(layer)
             if layer.isValid():
@@ -89,12 +85,12 @@ def add_layers_to_project(
     for group_label, layer_files in layers1.items():
         # Add layers to the group based on their type (raster or vector)
         for group_label, [label, the_url] in layer_files.items():
-            print(the_url, label)
-            layer = add_qgis_raster_layer(the_url, label)
-            layerz.append(layer)
-            project.addMapLayer(layer, False)
-            print(f"Adding {label}")
-            lvl1_grp.addLayer(layer)
+            if label.find("F1") >= 0:
+                layer = add_qgis_raster_layer(the_url, label)
+                layerz.append(layer)
+                project.addMapLayer(layer, False)
+
+                lvl1_grp.addLayer(layer)
     sorted(layers2)
 
     l2a_grp = root.addGroup("S3 Level 2 FRP")
@@ -111,7 +107,11 @@ def add_layers_to_project(
     # Save the project file
     project.write(project_path.as_posix())
     logger.info(f"QGIS project file saved at: {project_path}")
-    qgs.exit()
+    del lvl1_grp
+    del l2a_grp
+    del firms_grp
+    layerz.clear()
+    project.clear()
 
 
 def scan_level1(lvl1folder: Path, bands: list | None = None) -> dict:
@@ -179,10 +179,14 @@ def create_all_project_files(
     s2 = set([k.date() for k in l2.keys()])
     s3 = set([k.date() for k in f1.keys()])
     distinct_dates = sorted(list((s1.union(s2)).union(s3)))
+    QgsApplication.setPrefixPath("/home/jose/mambaforge/bin", True)
+    qgs = QgsApplication([], False, None)
+    qgs.initQgis()
 
     for today in distinct_dates:
-        if today < (dt.datetime.today() - dt.timedelta(days=3)):
+        if today < (dt.datetime.today().date() - dt.timedelta(days=15)):
             continue
+        print(today)
         output_fname = (
             output_folder / f"proj_{today.strftime('%Y-%m-%d')}.qgz"
         )
@@ -190,6 +194,8 @@ def create_all_project_files(
         l2_today = {k: v for k, v in l2.items() if k.date() == today}
         firms_today = {k: v for k, v in f1.items() if k.date() == today}
         add_layers_to_project(l1_today, l2_today, firms_today, output_fname)
+
+    qgs.exit()
 
 
 def scan_layers(lvl1folder, lvl2folder, firmsfolder):

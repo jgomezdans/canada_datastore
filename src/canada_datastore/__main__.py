@@ -46,24 +46,29 @@ def main(lvl1folder, lvl2folder, firmsfolder, date):
         except ValueError:
             logger.error("Dates should be given as YYYY-MM-DD format")
     else:
-        start_day = dt.datetime.today() - dt.timedelta(days=3)
-    if firmsfolder is not None:
-        _ = get_firms_date(start_day, output_folder=firmsfolder, range=10)
+        start_day = dt.datetime.today() - dt.timedelta(days=1)
     if lvl2folder is not None:
+        logger.info("Downloading Level2 data...")
         get_s3_lvl2_products(lvl2folder.as_posix(), start_date=start_day)
         process_lv2_products(lvl2folder, "processed_output")
-    if lvl1folder is None:
-        return
     day1 = dt.timedelta(days=1)
     today = start_day
     while today <= dt.datetime.now():
-        select_product_filter(
-            "EO:EUM:DAT:0411",
-            PICKLE_LAKE,
-            today,
-            today + day1,
-            output_folder=lvl1folder.as_posix(),
-        )
+        if firmsfolder is not None:
+            logger.info(f"Downloading FIRMS data {today}...")
+            retval = get_firms_date(today, output_folder=firmsfolder, range=1)
+            logger.info(f"FIRMS: got {retval.keys()}")
+        if lvl1folder is not None:
+            logger.info(
+                f"Downloading Level1 data for {today.strftime('%Y-%m-%d')}"
+            )
+            select_product_filter(
+                "EO:EUM:DAT:0411",
+                PICKLE_LAKE,
+                today,
+                today + day1,
+                output_folder=lvl1folder.as_posix(),
+            )
         today = today + day1
     logger.info("Downloaded and converted files")
     logger.info("Creating QGIS project files")
