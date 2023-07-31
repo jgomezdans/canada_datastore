@@ -16,11 +16,11 @@ logger = logging.getLogger("canada_datastore")
 
 
 PICKLE_LAKE = [
-    [-98, 56],
-    [-98, 46],
+    [-102, 56],
+    [-102, 46],
     [-82, 46],
     [-82, 56],
-    [-98, 56],
+    [-102, 56],
 ]
 
 
