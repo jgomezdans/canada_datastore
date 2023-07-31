@@ -70,16 +70,17 @@ def download_product(product, output_folder: str | Path):
 
 def process_granule(product, output_folder: str | Path):
     output_folder = Path(output_folder)
-    loc = output_folder / (product.name.replace(".zip", ""))
-    if not loc.exists():
-        try:
-            with zipfile.ZipFile(product, "r") as zip_ref:
-                logger.info(f"Uncompressing {product} to {loc.parent}")
-                zip_ref.extractall(loc.parent)
-        except zipfile.BadZipFile:
-            print(f"{product} is corrupted?")
-            return {}
-    find_files(loc)
+    if product.name.endswith("_NR_004.SEN3"):
+        loc = output_folder / (product.name.replace(".zip", ""))
+        if not loc.exists():
+            try:
+                with zipfile.ZipFile(product, "r") as zip_ref:
+                    logger.info(f"Uncompressing {product} to {loc.parent}")
+                    zip_ref.extractall(loc.parent)
+            except zipfile.BadZipFile:
+                print(f"{product} is corrupted?")
+                return {}
+        find_files(loc)
 
 
 def select_product_filter(
