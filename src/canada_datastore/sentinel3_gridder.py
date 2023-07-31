@@ -70,6 +70,10 @@ def to_tif(product: Path) -> Path:
     fname = product.name
     path = product.parent
     layer = PRODUCT_LUT[fname][0]
+    output_file = path / f"{layer}.vrt"
+    output_tif = path / f"{layer}.tif"
+    if output_tif.exists():
+        return output_tif
     geo = path / (PRODUCT_LUT[fname][1])
     tag = PRODUCT_LUT[fname][1].rsplit(".", 1)[0].split("_")[1]
     gdal_dataset = f'NETCDF:"{product}":{layer}'
@@ -80,8 +84,6 @@ def to_tif(product: Path) -> Path:
     lon = path / f"longitude_{tag}.tif"
     lat = path / f"latitude_{tag}.tif"
     gdal_dataset = to_vrt(gdal_dataset, "VAL")
-    output_file = path / f"{layer}.vrt"
-    output_tif = path / f"{layer}.tif"
     geocode_vrt(gdal_dataset.as_posix(), lat, lon, output_file)
     _ = gdal.Warp(
         output_tif.as_posix(),

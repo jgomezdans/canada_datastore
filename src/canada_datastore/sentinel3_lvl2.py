@@ -1,3 +1,4 @@
+import datetime as dt
 import ftplib
 import json
 import logging
@@ -40,7 +41,11 @@ def nc_to_dataframe(fname, to_folder):
         logger.info(f"No fires in {fname}")
 
 
-def download_files_from_ftps(remote_url: str, local_directory: str) -> None:
+def download_files_from_ftps(
+    remote_url: str,
+    local_directory: str,
+    start_date: None | dt.datetime = None,
+) -> None:
     # Parse the remote URL to get the FTPS server and file path
     parsed_url = urlparse(remote_url)
     server_address = parsed_url.hostname
@@ -82,6 +87,12 @@ def download_files_from_ftps(remote_url: str, local_directory: str) -> None:
                 # Create the corresponding local subdirectory
                 # and continue recursion
                 local_subdirectory = local_directory_path / file_name
+                try:
+                    date = dt.datetime.strptime(file_name, "%Y%m%d")
+                    if date < start_date:
+                        continue
+                except ValueError:
+                    pass
                 local_subdirectory.mkdir(parents=True, exist_ok=True)
                 logger.info(f"Going into {file_name}")
                 download_directory(file_name, local_subdirectory)
@@ -108,14 +119,18 @@ def download_files_from_ftps(remote_url: str, local_directory: str) -> None:
     return dloaded_files
 
 
-def get_s3_lvl2_products(local_dir: str | Path):
+def get_s3_lvl2_products(
+    local_dir: str | Path, start_date: dt.datetime | None = None
+):
     logger.info("Starting SEN3 Level 2 mirroring")
     local_dir = Path(local_dir)
     if not local_dir.exists():
         local_dir.mkdir(parents=True, exist_ok=True)
     folder = "operational_data"
     remote_url = f"{URL}/{folder}"
-    dloaded_files = download_files_from_ftps(remote_url, local_dir.as_posix())
+    dloaded_files = download_files_from_ftps(
+        remote_url, local_dir.as_posix(), start_date=start_date
+    )
     logger.info("Done with SEN3 Level 2 mirroring")
     return dloaded_files
 

@@ -181,7 +181,7 @@ def create_all_project_files(
     distinct_dates = sorted(list((s1.union(s2)).union(s3)))
 
     for today in distinct_dates:
-        if today < dt.date(2023, 7, 15):
+        if today < (dt.datetime.today() - dt.timedelta(days=3)):
             continue
         output_fname = (
             output_folder / f"proj_{today.strftime('%Y-%m-%d')}.qgz"

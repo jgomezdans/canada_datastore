@@ -46,11 +46,11 @@ def main(lvl1folder, lvl2folder, firmsfolder, date):
         except ValueError:
             logger.error("Dates should be given as YYYY-MM-DD format")
     else:
-        start_day = dt.datetime(2023, 7, 15)
+        start_day = dt.datetime.today() - dt.timedelta(days=3)
     if firmsfolder is not None:
         _ = get_firms_date(start_day, output_folder=firmsfolder, range=10)
     if lvl2folder is not None:
-        get_s3_lvl2_products(lvl2folder.as_posix())
+        get_s3_lvl2_products(lvl2folder.as_posix(), start_date=start_day)
         process_lv2_products(lvl2folder, "processed_output")
     if lvl1folder is None:
         return
