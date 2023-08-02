@@ -2,3 +2,8 @@ gdal
 eumdac
 requests
 tqdm
+qgis.core
+click
+pandas
+xarray
+retrying
