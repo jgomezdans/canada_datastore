@@ -134,16 +134,24 @@ def get_s3_lvl2_products(
     dloaded_files = download_files_from_ftps(
         remote_url, local_dir.as_posix(), start_date=start_date
     )
-    print(dloaded_files)
+
     logger.info("Done with SEN3 Level 2 mirroring")
     return dloaded_files
 
 
-def process_lv2_products(local_dir: str | Path, output_dir: str):
+def process_lv2_products(
+    local_dir: str | Path, output_dir: str, start_date: dt.datetime | dt.date
+) -> None:
     folder = Path(local_dir)
     outfolder = folder / output_dir
     if not outfolder.exists():
         outfolder.mkdir(parents=True, exist_ok=True)
-    fnames = [f for f in folder.rglob("**/FRP*nc")]
-    for fname in fnames:
+
+    fnames = {
+        dt.datetime.strptime(f.parts[-2].split("_")[8], "%Y%m%dT%H%M%S"): f
+        for f in folder.rglob("**/FRP*nc")
+        if dt.datetime.strptime(f.parts[-2].split("_")[8], "%Y%m%dT%H%M%S")
+        >= start_date
+    }
+    for k, fname in fnames.items():
         nc_to_dataframe(fname, outfolder)
