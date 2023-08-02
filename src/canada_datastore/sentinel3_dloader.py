@@ -70,7 +70,7 @@ def download_product(product, output_folder: str | Path):
 
 def process_granule(product, output_folder: str | Path):
     output_folder = Path(output_folder)
-    if product.name.endswith("_NR_004.SEN3"):
+    if product.name.endswith("_NR_004.SEN3.zip"):
         loc = output_folder / (product.name.replace(".zip", ""))
         if not loc.exists():
             try:
@@ -114,6 +114,7 @@ def select_product_filter(
     process = partial(process_granule, output_folder=output_folder)
     fnames = thread_map(downloader, products, max_workers=4)
     process_map(process, fnames)
+
     # [process(x) for x in fnames]
 
 
