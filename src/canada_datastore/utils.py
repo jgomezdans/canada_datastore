@@ -17,7 +17,7 @@ from qgis.core import (
 logger = logging.getLogger("canada_datastore")
 
 # URL = "http://10.81.205.13:3333/Canada_datastore/"
-URL = "https://gws-access.jasmin.ac.uk/public/global_fire_models/"
+URL = "https://gws-access.jasmin.ac.uk/public/global_fire_models/Canada_datastore_2024/"
 # URL = "/home/jose/data/"
 
 
@@ -113,8 +113,7 @@ def add_layers_to_project(
             layer = QgsVectorLayer(the_url, f"FIRMS {label}", "ogr")
             layerz.append(layer)
             if layer.isValid():
-                print(f"Adding {label}")
-                print(the_url)
+                print(f"Adding {label} <> {the_url}")
                 project.addMapLayer(
                     layer, False
                 )  # Add the layer without adding it to the layer tree
@@ -126,6 +125,7 @@ def add_layers_to_project(
         # Add layers to the group based on their type (raster or vector)
         for group_label, [label, the_url] in layer_files.items():
             if label.find("F1") >= 0:
+                print(f"Adding {label} <> {the_url}")
                 layer = add_qgis_raster_layer(the_url, label)
                 layerz.append(layer)
                 project.addMapLayer(layer, False)
@@ -139,7 +139,7 @@ def add_layers_to_project(
         print(the_url, label)
         layerz.append(layer)
         if layer.isValid():
-            print(f"Adding {label}")
+            print(f"Adding {label} <> {the_url}")
             project.addMapLayer(
                 layer, False
             )  # Add the layer without adding it to the layer tree
@@ -233,9 +233,6 @@ def create_all_project_files(
         l1_today = {k: v for k, v in l1.items() if k.date() == today}
         l2_today = {k: v for k, v in l2.items() if k.date() == today}
         firms_today = {k: v for k, v in f1.items() if k.date() == today}
-        import pdb
-
-        pdb.set_trace()
         add_layers_to_project(l1_today, l2_today, firms_today, output_fname)
 
     qgs.exit()
