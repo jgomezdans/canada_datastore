@@ -1,6 +1,7 @@
 import datetime as dt
 import logging
 from pathlib import Path
+import subprocess
 from typing import Dict
 
 from qgis.core import (
@@ -15,8 +16,46 @@ from qgis.core import (
 
 logger = logging.getLogger("canada_datastore")
 
-URL = "http://10.81.205.13:3333/Canada_datastore/"
+# URL = "http://10.81.205.13:3333/Canada_datastore/"
+URL = "https://gws-access.jasmin.ac.uk/public/global_fire_models/"
 # URL = "/home/jose/data/"
+
+
+def rsync_files(source, destination, options=None):
+    """
+    Sync files from source to destination using rsync.
+
+    :param source: The source directory or file to sync.
+    :param destination: The destination directory.
+    :param options: Additional rsync options as a list. Default is None.
+    :return: None
+    """
+    # Default rsync command
+    command = [
+        "rsync",
+        "-av",
+        "--exclude",
+        "*.nc",
+        "--exclude",
+        "*_VAL.tif",
+        "--exclude",
+        "*.zip",
+    ]
+
+    # Append additional options if provided
+    if options:
+        command.extend(options)
+
+    # Add source and destination to the command
+    command.append(source)
+    command.append(destination)
+
+    try:
+        # Execute the rsync command
+        subprocess.run(command, check=True)
+        logger.info(f"Successfully synced {source} to {destination}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error occurred while syncing: {e}")
 
 
 def add_qgis_raster_layer(the_url, label):
@@ -75,6 +114,7 @@ def add_layers_to_project(
             layerz.append(layer)
             if layer.isValid():
                 print(f"Adding {label}")
+                print(the_url)
                 project.addMapLayer(
                     layer, False
                 )  # Add the layer without adding it to the layer tree
@@ -193,6 +233,9 @@ def create_all_project_files(
         l1_today = {k: v for k, v in l1.items() if k.date() == today}
         l2_today = {k: v for k, v in l2.items() if k.date() == today}
         firms_today = {k: v for k, v in f1.items() if k.date() == today}
+        import pdb
+
+        pdb.set_trace()
         add_layers_to_project(l1_today, l2_today, firms_today, output_fname)
 
     qgs.exit()
@@ -203,7 +246,10 @@ def scan_layers(lvl1folder, lvl2folder, firmsfolder):
     lvl2folder = get_folder(lvl2folder)
     firmsfolder = get_folder(firmsfolder)
     lvl1_dict = convert_nested_dict(scan_level1(lvl1folder))
-    lvl2_dict = scan_level2(lvl2folder)
+    if lvl2folder is not None:
+        lvl2_dict = scan_level2(lvl2folder)
+    else:
+        lvl2_dict = {}
     firms_dict = convert_nested_dict(scan_firms(firmsfolder))
     return (lvl1_dict, lvl2_dict, firms_dict)
 
@@ -241,7 +287,7 @@ def get_folder(folder: str | Path | None) -> Path | None:
 
 
 def convert_nested_dict(
-    original_dict: Dict[str, Dict[str, int]]
+    original_dict: Dict[str, Dict[str, int]],
 ) -> Dict[str, Dict[str, int]]:
     """
     Convert a nested dictionary from the form "dict[sensor][date]" to

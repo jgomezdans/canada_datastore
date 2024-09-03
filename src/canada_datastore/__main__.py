@@ -1,5 +1,7 @@
 import datetime as dt
 import logging
+import os
+from pathlib import Path
 
 import click
 
@@ -11,16 +13,27 @@ from canada_datastore import (
 )
 
 from .utils import create_all_project_files, get_folder
+from .utils import rsync_files
 
 logger = logging.getLogger("canada_datastore")
 
 
+# PICKLE_LAKE = [
+#     [-102, 56],
+#     [-102, 46],
+#     [-82, 46],
+#     [-82, 56],
+#     [-102, 56],
+# ]
+
+# Fort McMurray
 PICKLE_LAKE = [
-    [-102, 56],
-    [-102, 46],
-    [-82, 46],
-    [-82, 56],
-    [-102, 56],
+    [-115.2178, 59.4289],  # Northwest corner
+    [-107.5422, 59.4289],  # Northeast corner
+    [-107.5422, 54.0235],  # Southeast corner
+    [-115.2178, 54.0235],  # Southwest corner
+    [-115.2178, 59.4289],  # Back to the Northwest corner to close
+    # the polygon
 ]
 
 
@@ -76,13 +89,30 @@ def main(lvl1folder, lvl2folder, firmsfolder, date):
         today = today + day1
     logger.info("Downloaded and converted files")
     logger.info("Creating QGIS project files")
+    logger.info("Syncing to JASMIN...")
+    jasmin_rsync = (
+        "jlgomezdans@xfer1.jasmin.ac.uk:/home/users/"
+        + "jlgomezdans/global_fire_models/public/"
+    )
+    data_folders = [
+        folder.as_posix()
+        for folder in [lvl1folder, lvl2folder, firmsfolder]
+        if folder is not None
+    ]
 
+    common_parent = Path(os.path.commonpath(data_folders))
+    rsync_files(common_parent, jasmin_rsync)
+
+    # Create output folder if it doesn't exist
+    (common_parent / "qgis_projects").mkdir(exist_ok=True)
     create_all_project_files(
         lvl1folder,
         lvl2folder,
         firmsfolder,
-        lvl1folder.parent / "qgis_projects",
+        common_parent / "qgis_projects",
     )
+    # Now sync the QGIS projects
+    rsync_files(common_parent, jasmin_rsync)
 
 
 main()

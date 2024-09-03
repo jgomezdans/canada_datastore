@@ -32,7 +32,7 @@ def get_firms_date(
         else output_folder
     )
     if region is None:
-        region = [-98, 46, -82, 56]
+        region = [-116, 54, -107, 60]
     region = f"{region[0]},{region[1]},{region[2]},{region[3]}"
     if date is None:
         start_date = dt.datetime.now()
